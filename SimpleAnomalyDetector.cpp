@@ -11,6 +11,17 @@ SimpleAnomalyDetector::~SimpleAnomalyDetector() {
 	// TODO Auto-generated destructor stub
 }
 
+bool SimpleAnomalyDetector::isCorrelationTrue(const string &feat1, const string &feat2) {
+    //check vec for correlations
+    for (auto iter = cf.begin(); iter != cf.end(); ++iter) {
+        // make sure we dont detect twice
+        if (iter->feature1 == feat2 && iter->feature2 == feat1) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void SimpleAnomalyDetector::learnNormal(const TimeSeries& ts) {
     //  i column
     for (auto const &it1: ts.getDataTable()) {
@@ -34,49 +45,48 @@ void SimpleAnomalyDetector::learnNormal(const TimeSeries& ts) {
                     correlatedFeature = it2.first;
                 }
             }
-            if (maxCorrelation > 0.9) {
-                insertCorrelated(feature, correlatedFeature, maxCorrelation, ts);
-            }
+        }
+        // make sure isCorrelationTrue and that we dont use correlation twice
+        if (maxCorrelation > 0.9 && isCorrelationTrue(feature, correlatedFeature)) {
+            insertCorrelated(feature, correlatedFeature, maxCorrelation, ts);
         }
     }
 }
 
 void SimpleAnomalyDetector::insertCorrelated(const string& feature ,string corFeature, float correlation, const TimeSeries& ts) {
-    for (auto & iter : cf) {
-        if (iter.feature1 == corFeature && iter.feature2 == feature){
-            return;
-        }
-        else{
-            correlatedFeatures cFeatStruct;
-            cFeatStruct.feature1 = feature;
-            cFeatStruct.feature2 = corFeature;
-            cFeatStruct.corrlation = correlation;
-            int size = ts.getValues(feature).size();
-            Point** pointsReg = new Point* [size];
-            //create arrays of x and y values for the linear reg
-            for (int j = 0; j < size; ++j) {
-                pointsReg[j] = new Point(ts.getValues(cFeatStruct.feature1).at(j),ts.getValues(cFeatStruct.feature2).at(j));
-            }
-            //create the line regression for this struct.
-            cFeatStruct.lin_reg = linear_reg(pointsReg, size);
-            float deviation, maxDeviation = 0;
-            for (int i = 0; i < size; ++i) {
-                deviation = dev(*pointsReg[i], cFeatStruct.lin_reg);
-                if (deviation > maxDeviation) {
-                    maxDeviation = deviation;
-                }
-            }
-            cFeatStruct.threshold = static_cast<float>(1.1 * maxDeviation);
-            cf.push_back(cFeatStruct);
-            for (int i = 0; i < size; ++i) {
-                delete pointsReg[i];
-            }
-            delete [] pointsReg;
+    correlatedFeatures cFeatStruct;
+    cFeatStruct.feature1 = feature;
+    cFeatStruct.feature2 = corFeature;
+    cFeatStruct.corrlation = correlation;
+    int size = ts.getValues(feature).size();
+    float x[size], y[size];
+    for (int i = 0; i < size ; ++i) {
+        x[i]=ts.getValues(cFeatStruct.feature1).at(i);
+        y[i]=ts.getValues(cFeatStruct.feature2).at(i);
+    }
+
+    Point *pointsReg[size]; //array of points obj
+    //Point** pointsReg = new Point* [size]; //array of points obj
+    //create arrays of x and y values for the linear reg
+    for (int j = 0; j < size; j++) {
+        pointsReg[j] = new Point(x[j],y[j]);
+    }
+    //create regression line for the struct
+    cFeatStruct.lin_reg = linear_reg(pointsReg, size);
+    float deviation, maxDeviation = 0;
+    //calc the dis of point
+    for (int i = 0; i < size; ++i) {
+        deviation = dev(*pointsReg[i], cFeatStruct.lin_reg);
+        if (deviation > maxDeviation) {
+            maxDeviation = deviation;
         }
     }
+    cFeatStruct.threshold = static_cast<float>(1.1 * maxDeviation);
+    cf.push_back(cFeatStruct);
+    for (int i = 0; i < size; ++i) {
+        delete pointsReg[i];
+    }
 }
-
-
 
 vector<AnomalyReport> SimpleAnomalyDetector::detect(const TimeSeries& ts){
 	vector<AnomalyReport> vecReport;
@@ -96,4 +106,3 @@ vector<AnomalyReport> SimpleAnomalyDetector::detect(const TimeSeries& ts){
     }
     return vecReport;
 }
-

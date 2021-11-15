@@ -29,6 +29,8 @@ public:
 
     void insertCorrelated(const string& feature ,string corFeature, float correlation, const TimeSeries& ts);
 
+    bool isCorrelationTrue(const string &feat1, const string &feat2);
+
 	vector<correlatedFeatures> getNormalModel(){
 		return cf;
 	}

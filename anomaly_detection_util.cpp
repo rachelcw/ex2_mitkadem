@@ -60,6 +60,7 @@ Line linear_reg(Point **points, int size) {
     return line;
 }
 
+
 // returns the deviation between point p and the line
 float dev(Point p,Line l) {
     return std::abs(p.y -l.f(p.x));  // |y - f(x)|
