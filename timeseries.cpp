@@ -11,7 +11,7 @@ void TimeSeries::readCSVFile(const char *CSVfileName) {
         throw runtime_error("couldn't open this file.");
     }
     string line;
-    getline(CSVfile, line);  //geT first line from file = features
+    getline(CSVfile, line);  //get first line from file = features
     features = splitLine(line, ','); //creat features vector
     vector<string> vectorValues; // new vec saves ech time one more line
     // convert all lines into feature vectors from text as float.

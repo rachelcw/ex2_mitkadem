@@ -27,6 +27,8 @@ public:
 	virtual void learnNormal(const TimeSeries& ts);
 	virtual vector<AnomalyReport> detect(const TimeSeries& ts);
 
+    void insertCorrelated(const string& feature ,string corFeature, float correlation, const TimeSeries& ts);
+
 	vector<correlatedFeatures> getNormalModel(){
 		return cf;
 	}
